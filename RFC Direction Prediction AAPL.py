@@ -34,6 +34,7 @@ apl["Target"]=np.sign(apl["Smoothed_Close"].shift(-d)-apl["Smoothed_Close"])
 plt.plot(apl.index, apl["Smoothed_Close"])
 plt.xlabel("Year")
 plt.ylabel("Close Price (Smoothed)")
+plt.title("Apple Inc. Close Price")
 plt.show()
 
 ##########Feature Extraction (Defining Technical Indicators)
