@@ -16,12 +16,12 @@ from sklearn.model_selection import RandomizedSearchCV
 #of data from 2019/01/01, testing it on the remaining 30%, with a time horizon of 90 days.
 apl=yf.Ticker("AAPL")
 #apl=apl.history(period="max", auto_adjust=False)
-apl=apl.history(start="2019-01-01", end=dt.today().strftime('%Y-%m-%d'), auto_adjust=False)
+apl=apl.history(start="2022-06-01", end=dt.today().strftime('%Y-%m-%d'), auto_adjust=False)
 apl=apl.drop(columns=["Dividends", "Stock Splits"])
 
 ##########Exponential Smoothing - exponentially decreasing weights to past observations, recent
 #observations weighted higher
-alpha=0.7 #Can play with this; large alpha reduces the smoothing
+alpha=0.45 #Can play with this; large alpha reduces the smoothing
 apl["Smoothed_Close"]=alpha*apl["Close"]+(1-alpha)*(apl["Close"].shift(1))
 apl["Smoothed_Open"]=alpha*apl["Open"]+(1-alpha)*(apl["Open"].shift(1))
 apl["Smoothed_High"]=alpha*apl["High"]+(1-alpha)*(apl["High"].shift(1))
@@ -29,7 +29,7 @@ apl["Smoothed_Low"]=alpha*apl["Low"]+(1-alpha)*(apl["Low"].shift(1))
 apl["Smoothed_Volume"]=alpha*apl["Volume"]+(1-alpha)*(apl["Volume"].shift(1))
 #Target setup (Equation (3))
 d=90 #Time horizon in days
-apl["Target"]=np.sign(apl["Smoothed_Close"].shift(-d)-apl["Smoothed_Close"])
+apl["Target"]=np.sign(apl["Close"].shift(-d)-apl["Close"])
 
 plt.plot(apl.index, apl["Smoothed_Close"])
 plt.xlabel("Year")
@@ -99,7 +99,7 @@ apl["LCR"]=apl["Smoothed_Low"]/apl["Smoothed_Close"]
 apl["HLR"]=apl["Smoothed_High"]/apl["Smoothed_Low"]
 
 #Drop all of the columns in the dataframe we're not going to use as features, & drop NaN columns
-apl=apl.drop(columns=["Open", "High", "Low", "Close", "Volume", "Smoothed_Close", "Smoothed_Open", "Smoothed_Volume", "Smoothed_High", "Smoothed_Low"])
+apl=apl.drop(columns=["Adj Close", "Open", "High", "Low", "Close", "Volume", "Smoothed_Close", "Smoothed_Open", "Smoothed_Volume", "Smoothed_High", "Smoothed_Low"])
 apl=apl.dropna(axis=0)
 
 ##########Building the RFC model
@@ -145,7 +145,7 @@ X_train=X_train.drop(columns=["Williams %R"])#Drop the least important feature(s
 X_test=X_test.drop(columns=["Williams %R"])
 
 #Run again and readjust hyperparams
-RFC=RandomForestClassifier(n_estimators=110, criterion="entropy", max_features="sqrt", min_samples_split=31, max_depth=20, max_leaf_nodes=250, random_state=42)
+RFC=RandomForestClassifier(n_estimators=120, criterion="entropy", max_features="sqrt", min_samples_split=30, max_depth=20, max_leaf_nodes=250, random_state=42)
 RFC.fit(X_train, y_train)
 feature_scores=pd.Series(RFC.feature_importances_, index=X_train.columns).sort_values(ascending=False)
 predictions=RFC.predict(X_test)
